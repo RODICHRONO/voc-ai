@@ -1,6 +1,7 @@
 import threading
 import unittest
 
+from voc_ai.transcriber import Transcript
 from voc_ai.transcription_service import TranscriptionService
 from voc_ai.turn_recorder import CompletedTurn
 
@@ -10,14 +11,14 @@ class FakeTranscriber:
         self.received: list[bytes] = []
         self.thread_name = ""
 
-    def transcribe(self, pcm: bytes) -> str:
+    def transcribe(self, pcm: bytes) -> Transcript:
         self.received.append(pcm)
         self.thread_name = threading.current_thread().name
-        return "bonjour"
+        return Transcript(text="bonjour", rejected=("Merci d'avoir regardé (hallucination connue)",))
 
 
 class FailingTranscriber:
-    def transcribe(self, pcm: bytes) -> str:
+    def transcribe(self, pcm: bytes) -> Transcript:
         raise RuntimeError("modèle indisponible")
 
 
@@ -35,6 +36,7 @@ class TranscriptionServiceTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(message["type"], "transcript")
         self.assertEqual((message["start_ms"], message["end_ms"]), (320, 1280))
         self.assertEqual(message["text"], "bonjour")
+        self.assertEqual(message["rejected"], ["Merci d'avoir regardé (hallucination connue)"])
         self.assertEqual(message["audio_ms"], 1000)
         self.assertGreaterEqual(message["processing_ms"], 0)
 

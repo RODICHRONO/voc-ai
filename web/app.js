@@ -41,11 +41,18 @@ function logTurn({ start_ms, end_ms, detected_ms }) {
   turnItems.set(start_ms, { text, meta });
 }
 
-function showTranscript({ start_ms, text, audio_ms, processing_ms }) {
+function showTranscript({ start_ms, text, rejected, audio_ms, processing_ms }) {
   const item = turnItems.get(start_ms);
   if (!item) return;
 
   item.text.textContent = text || "(rien d'intelligible)";
+  if (rejected.length > 0) {
+    // Ce que le filtre anti-hallucinations a retiré : à surveiller pour régler ses seuils.
+    const rejectedLine = document.createElement("div");
+    rejectedLine.className = "turn-rejected";
+    rejectedLine.textContent = `Écarté : ${rejected.join(" · ")}`;
+    item.meta.after(rejectedLine);
+  }
   // Facteur temps réel : en dessous de 1, le STT va plus vite que la parole.
   const realTimeFactor = (processing_ms / audio_ms).toFixed(2);
   item.meta.textContent += ` · transcrit en ${(processing_ms / 1000).toFixed(1)} s pour ${(audio_ms / 1000).toFixed(1)} s d'audio (×${realTimeFactor})`;

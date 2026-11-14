@@ -12,6 +12,7 @@ class TurnTranscribed:
     start_ms: int
     end_ms: int
     text: str
+    rejected: list[str]
     audio_ms: int
     # Temps de calcul du STT. processing_ms / audio_ms = "facteur temps réel" : au-dessus
     # de 1, le STT est plus lent que la parole et on ne pourra pas tenir une conversation.
@@ -34,7 +35,7 @@ class TranscriptionService:
 
     async def transcribe(self, turn: CompletedTurn) -> dict:
         started = time.perf_counter()
-        text = await asyncio.get_running_loop().run_in_executor(
+        transcript = await asyncio.get_running_loop().run_in_executor(
             self._executor, self._transcriber.transcribe, turn.audio
         )
         processing_ms = round((time.perf_counter() - started) * 1000)
@@ -43,7 +44,8 @@ class TranscriptionService:
             TurnTranscribed(
                 start_ms=turn.start_ms,
                 end_ms=turn.end_ms,
-                text=text,
+                text=transcript.text,
+                rejected=list(transcript.rejected),
                 audio_ms=turn.audio_ms,
                 processing_ms=processing_ms,
             )
